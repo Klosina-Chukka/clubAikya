@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "855830665088",
+    "project_id": "clubapp1-5874a",
+    "storage_bucket": "clubapp1-5874a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:855830665088:android:ceb4f358243eb70b80d365",
+        "android_client_info": {
+          "package_name": "com.example.clubaikya"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDamFIS3_66v3P9WThvU4KDxd0qd8MsT4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
