@@ -125,7 +125,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       Expanded(
                         child: TextButton(
                           style: ButtonStyle(
-                            backgroundColor: MaterialStateProperty.all(
+                            backgroundColor: WidgetStateProperty.all(
                                 _isSignIn ? Color(0xff75bdc4) : Colors.white),
                           ),
                           onPressed: () {
@@ -147,7 +147,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       Expanded(
                         child: TextButton(
                           style: ButtonStyle(
-                            backgroundColor: MaterialStateProperty.all(
+                            backgroundColor: WidgetStateProperty.all(
                                 !_isSignIn ? Color(0xff75bdc4) : Colors.white),
                           ),
                           onPressed: () {
