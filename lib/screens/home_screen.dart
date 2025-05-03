@@ -1,5 +1,6 @@
+import 'package:clubaikya/screens/ClubDetailPage.dart';
 import 'package:flutter/material.dart';
-import 'package:clubaikya/screens/clubpage.dart';
+import 'package:clubaikya/screens/clubinfo.dart';
 class HomeScreen extends StatelessWidget {
   final List<Map<String, String>> clubs = [
     {"name": "Ragavarsha Club", "image": "assets/clublogos/ragclub.png"},
@@ -35,7 +36,15 @@ class HomeScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
-                      ClubPage(clubName: clubs[index]["name"]!),
+                      ClubDetailPage(
+                         clubName: clubs[index]["name"]!,
+
+                    clubDescription: getClubDescription(clubs[index]["name"]!),
+                    clubLogo: clubs[index]["image"]!,
+                    pastEvents: getClubEvents(clubs[index]["name"]!),
+                    instagramLink: getInstagramLink(clubs[index]["name"]!),
+                    websiteLink: getWebsiteLink(clubs[index]["name"]!),
+                      ),
                 ),
               );
             },
