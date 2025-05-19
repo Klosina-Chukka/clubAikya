@@ -267,7 +267,7 @@ class _DetailsPageState extends State<DetailsPage> {
     };
 
     final response = await http.post(
-      Uri.parse('https://3865-2405-201-c42a-4810-8ae-7eaf-b880-4e68.ngrok-free.app/api/users'),
+      Uri.parse('https://cfc9-2405-201-c42a-4810-fd18-a817-51c3-291c.ngrok-free.app/api/users'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(userData),
     );
