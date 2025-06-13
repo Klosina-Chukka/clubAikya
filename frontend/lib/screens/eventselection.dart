@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 class ClubPage extends StatefulWidget {
   final String clubName;
-  ClubPage({required this.clubName});
+  final token;
+  ClubPage({required this.clubName,this.token});
   @override
   _ClubPageState createState() => _ClubPageState();
 }
@@ -12,12 +14,23 @@ class ClubPage extends StatefulWidget {
 class _ClubPageState extends State<ClubPage> {
   final TextEditingController _eventTitleController = TextEditingController();
   final TextEditingController _eventDescController = TextEditingController();
+  final TextEditingController _eventLocationController = TextEditingController();
+  String _eventMode = 'Offline';
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+  DateTime? _registrationDeadline;
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
+  List<Map<String, TextEditingController>> _associatedLinks = [];
+  final TextEditingController _customFieldLabelController = TextEditingController();
+  final TextEditingController _customFieldValueController = TextEditingController();
 
-  // Function to pick a date
+  @override
+  void initState() {
+    super.initState();
+    _addLinkField();
+  }
+
   Future<void> _pickDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -32,7 +45,6 @@ class _ClubPageState extends State<ClubPage> {
     }
   }
 
-  // Function to pick a time
   Future<void> _pickTime(BuildContext context) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -45,7 +57,20 @@ class _ClubPageState extends State<ClubPage> {
     }
   }
 
-  // Function to pick an image
+  Future<void> _pickRegistrationDeadline(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        _registrationDeadline = picked;
+      });
+    }
+  }
+
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -55,35 +80,87 @@ class _ClubPageState extends State<ClubPage> {
     }
   }
 
-  // Function to save the event
-  void _saveEvent() {
-    if (_eventTitleController.text.isEmpty ||
-        _eventDescController.text.isEmpty ||
-        _selectedDate == null ||
-        _selectedTime == null ||
-        _selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill all fields')),
-      );
-      return;
-    }
+  void _addLinkField() {
+    setState(() {
+      _associatedLinks.add({
+        'label': TextEditingController(),
+        'url': TextEditingController(),
+      });
+    });
+  }
 
-    // Mock saving function (Replace with DB logic)
+  void _removeLinkField(int index) {
+    setState(() {
+      _associatedLinks.removeAt(index);
+    });
+  }
+
+  
+  void _saveEvent() async {
+  if (_eventTitleController.text.isEmpty ||
+      _eventDescController.text.isEmpty ||
+      _eventLocationController.text.isEmpty ||
+      _selectedDate == null ||
+      _selectedTime == null ||
+      _registrationDeadline == null ||
+      _selectedImage == null) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text(
-              'Event Saved for ${widget.clubName} on ${_selectedDate!.toLocal().toString().split(' ')[0]} at ${_selectedTime!.format(context)}')),
+      SnackBar(content: Text('Please fill all fields')),
     );
+    return;
+  }
 
-    // Clear fields after saving
+  List<Map<String, String>> finalLinks = _associatedLinks.map((link) {
+    return {
+      'label': link['label']!.text.trim(),
+      'url': link['url']!.text.trim(),
+    };
+  }).where((link) => link['label']!.isNotEmpty && link['url']!.isNotEmpty).toList();
+print('Token: ${widget.token}');
+  var uri = Uri.parse('https://4274-2405-201-c42a-4810-30a2-fb9e-81e0-e319.ngrok-free.app/api/events'); // UPDATE THIS
+  var request = http.MultipartRequest('POST', uri);
+  request.headers['Authorization'] = 'Bearer ${widget.token}';
+  request.fields['clubName'] = widget.clubName;
+  request.fields['title'] = _eventTitleController.text.trim();
+  request.fields['description'] = _eventDescController.text.trim();
+  request.fields['location'] = _eventLocationController.text.trim();
+  request.fields['mode'] = _eventMode;
+  request.fields['date'] = _selectedDate!.toIso8601String();
+  request.fields['time'] = _selectedTime!.format(context);
+  request.fields['registrationDeadline'] = _registrationDeadline!.toIso8601String();
+  request.fields['customFieldLabel'] = _customFieldLabelController.text.trim();
+  request.fields['customFieldValue'] = _customFieldValueController.text.trim();
+  request.fields['associatedLinks'] = jsonEncode(finalLinks);
+
+  request.files.add(await http.MultipartFile.fromPath('image', _selectedImage!.path));
+
+  var response = await request.send();
+
+  if (response.statusCode == 201 ||response.statusCode == 200 ) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Event saved successfully')),
+    );
     _eventTitleController.clear();
     _eventDescController.clear();
+    _eventLocationController.clear();
+    _customFieldLabelController.clear();
+    _customFieldValueController.clear();
     setState(() {
       _selectedDate = null;
       _selectedTime = null;
+      _registrationDeadline = null;
       _selectedImage = null;
+      _associatedLinks = [];
+      _eventMode = 'Offline';
+      _addLinkField();
     });
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to save event')),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -115,18 +192,40 @@ class _ClubPageState extends State<ClubPage> {
                 maxLines: 3,
               ),
               SizedBox(height: 16),
-
-              // Date Picker
+              TextField(
+                controller: _eventLocationController,
+                decoration: InputDecoration(
+                  labelText: 'Location',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _eventMode,
+                items: ['Offline', 'Online'].map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    _eventMode = newValue!;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Mode',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 16),
               ListTile(
                 title: Text(_selectedDate == null
                     ? 'Select Event Date'
-                    : 'Selected Date: ${_selectedDate!.toLocal()}'
-                        .split(' ')[0]),
+                    : 'Selected Date: ${_selectedDate!.toLocal().toString().split(' ')[0]}'),
                 trailing: Icon(Icons.calendar_today),
                 onTap: () => _pickDate(context),
               ),
-
-              // Time Picker
               ListTile(
                 title: Text(_selectedTime == null
                     ? 'Select Event Time'
@@ -134,8 +233,13 @@ class _ClubPageState extends State<ClubPage> {
                 trailing: Icon(Icons.access_time),
                 onTap: () => _pickTime(context),
               ),
-
-              // Image Picker
+              ListTile(
+                title: Text(_registrationDeadline == null
+                    ? 'Select Registration Deadline'
+                    : 'Deadline: ${_registrationDeadline!.toLocal().toString().split(' ')[0]}'),
+                trailing: Icon(Icons.event_busy),
+                onTap: () => _pickRegistrationDeadline(context),
+              ),
               SizedBox(height: 16),
               Text(
                 "Upload Image",
@@ -154,15 +258,55 @@ class _ClubPageState extends State<ClubPage> {
                   child: _selectedImage != null
                       ? Image.file(_selectedImage!, fit: BoxFit.cover)
                       : Center(
-                          child: Icon(Icons.add_a_photo,
-                              size: 50, color: Colors.grey),
+                          child: Icon(Icons.add_a_photo, size: 50, color: Colors.grey),
                         ),
                 ),
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 16),
+              Text(
+                "Associated Links",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              ..._associatedLinks.asMap().entries.map((entry) {
+                int index = entry.key;
+                var controllers = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: controllers['label'],
+                          decoration: InputDecoration(labelText: 'Label'),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          controller: controllers['url'],
+                          decoration: InputDecoration(labelText: 'URL'),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.remove_circle, color: Colors.red),
+                        onPressed: () => _removeLinkField(index),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              TextButton.icon(
+                onPressed: _addLinkField,
+                icon: Icon(Icons.add),
+                label: Text("Add Link"),
+              ),
+              SizedBox(height: 16),
+    
               ElevatedButton(
                 onPressed: _saveEvent,
-                child: Text('Save',selectionColor: Colors.black,),
+                child: Text('Save', selectionColor: Colors.black),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xff75bdc4),
                   padding: EdgeInsets.symmetric(vertical: 14),

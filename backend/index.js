@@ -1,8 +1,13 @@
-const jwt = require('jsonwebtoken')
 const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
+const jwt = require('jsonwebtoken')
 const bodyParser = require('body-parser')
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
+const { v4: uuidv4 } = require('uuid')
+const cloudinary = require('cloudinary').v2
 const app = express()
 const port = 3000
 const JWT_SECRET = 'super_secret_key_123'
@@ -10,113 +15,226 @@ const JWT_SECRET = 'super_secret_key_123'
 app.use(cors())
 app.use(bodyParser.json())
 
+// Cloudinary Setup
+cloudinary.config({
+  cloud_name: 'dbdlaoews',    // <--- replace with your Cloudinary cloud name
+  api_key: '934196156288849',          // <--- replace with your Cloudinary API key
+  api_secret: 'B_8UWhShgif6QQTzMx501A1af8Y'     // <--- replace with your Cloudinary API secret
+})
+
+// Multer Setup for file upload
+const upload = multer({ dest: 'uploads/' })
 const otpStore = {}
 
 const accountSid = 'ACf017e34c36c3d3888a81351a91792996'
 const authToken = '784178795821b423500dae787c176a1b'
 const client = require('twilio')(accountSid, authToken)
 
-// ⏱ DEBUG: Track connection start time
-const connectionStart = Date.now()
-
+// ⏱ MongoDB Connection
 mongoose.connect("mongodb+srv://27ranjali:clubaikya@cluster0.nd2ipt3.mongodb.net/ClubAIKYA?retryWrites=true&w=majority&appName=Cluster0", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
-  const connectionEnd = Date.now()
-  console.log(`✅ Connected to MongoDB in ${connectionEnd - connectionStart}ms`)
-  console.log("📦 Using DB:", mongoose.connection.name)
+  console.log("✅ Connected to MongoDB")
 }).catch(err => {
-  const connectionEnd = Date.now()
-  console.error(`❌ MongoDB connection failed after ${connectionEnd - connectionStart}ms`)
-  console.error("❌ Error:", err.message)
-  process.exit(1) // stop the app if DB fails
+  console.error("❌ MongoDB connection error:", err.message)
+  process.exit(1)
 })
 
+// 📄 Schemas
 const userSchema = new mongoose.Schema({
-  phone: { type: String, required: true },
-  name: { type: String, required: true },
-  rollNo: { type: String, required: true },
-  course: { type: String, required: true },
-  branch: { type: String, required: true },
-  dob: { type: Date, required: true },
-  validity: { type: String },
+  phone: String,
+  name: String,
+  rollNo: String,
+  course: String,
+  branch: String,
+  dob: Date,
+  validity: String,
   role: { type: String, enum: ['Student', 'Admin'], default: 'Student' },
-  adminCode: { type: String }
+  adminCode: String
 })
-
 const User = mongoose.model("User", userSchema)
 
+const associatedLinkSchema = new mongoose.Schema({
+  label: String,
+  url: String
+})
+const eventSchema = new mongoose.Schema({
+  clubName: String,
+  title: String,
+  description: String,
+  location: String,
+  mode: { type: String, enum: ['Offline', 'Online'], default: 'Offline' },
+  date: Date,
+  time: String,
+  registrationDeadline: Date,
+  customFieldLabel: String,
+  customFieldValue: String,
+  associatedLinks: [associatedLinkSchema],
+  imageUrl: String
+}, { timestamps: true })
+const Event = mongoose.model("Event", eventSchema)
+
+// Middleware to authenticate JWT token and extract user
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'] || req.headers['Authorization']
+  const token = authHeader && authHeader.split(' ')[1]
+
+  if (!token) return res.status(401).json({ success: false, message: 'Token missing' })
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    const user = await User.findById(decoded.id)
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' })
+    req.user = user
+    console.log(token)
+    next()
+  } catch (err) {
+    return res.status(403).json({ success: false, message: 'Invalid or expired token' })
+  }
+}
+
+// 🔐 OTP Routes
 app.post('/send-otp', async (req, res) => {
   const { phone } = req.body
   const otp = Math.floor(100000 + Math.random() * 900000).toString()
   otpStore[phone] = otp
-  console.log(`📤 Sent OTP: ${otp} for phone: ${phone}`)
   try {
     await client.messages.create({
-      body: `Your OTP is ${otp}`,
+      body: `Your otp is ${otp}`, // Fixed template to use backticks and interpolation
       from: '+1 816 451 5164',
       to: phone,
     })
     res.send({ success: true, message: 'OTP sent' })
   } catch (err) {
-    console.error('❌ Error sending OTP:', err)
     res.status(500).send({ success: false, message: err.message })
   }
 })
 
 app.post('/verify-otp', async (req, res) => {
   const { phone, otp } = req.body
-  console.log(`🔐 Verifying OTP. Received: ${otp}, Stored: ${otpStore[phone]}`)
   if (otpStore[phone] === otp) {
     delete otpStore[phone]
     try {
-      console.log(`🔍 Checking user in DB for phone: ${phone}`)
-      const user = await User.findOne({ phone })
-      console.log(user ? `✅ User found: ${user.name}` : `ℹ️ No user registered with this phone.`)
-      if (user) {
-        const token = jwt.sign(
-          { id: user._id, phone: user.phone, role: user.role },
-          JWT_SECRET,
-          { expiresIn: '7d' }
-        )
-        res.send({ success: true, message: 'OTP verified and user logged in', token, user })
-      } else {
-        res.send({ success: true, message: 'OTP verified but user not registered' })
+      let user = await User.findOne({ phone })
+      if (!user) {
+        // Option 1: Create a new user automatically (if you want seamless signup)
+        user = await User.create({ phone }) // create user with minimal info
+        // Option 2: Or just return a token for a temporary unregistered user (less common)
       }
+      const token = jwt.sign({ id: user._id, phone: user.phone, role: user.role }, JWT_SECRET, { expiresIn: '7d' })
+      res.send({ success: true, message: 'OTP verified', token, user })
+      console.log(token)
     } catch (err) {
-      console.error('❌ Server error during verification:', err)
       res.status(500).send({ success: false, message: 'Server error' })
     }
   } else {
-    console.warn(`❌ Invalid OTP attempt for ${phone}`)
     res.status(400).send({ success: false, message: 'Invalid OTP' })
   }
 })
 
-app.post("/api/users", async (req, res) => {
+
+// Protect events creation route with authenticateToken middleware
+app.post("/api/events", authenticateToken, upload.single('image'), async (req, res) => {
   try {
-    console.log("📥 Received user data:", req.body)
-    const newUser = new User(req.body)
-    await newUser.save()
-    console.log("✅ User saved:", newUser.name)
-    const token = jwt.sign(
-      { id: newUser._id, phone: newUser.phone, role: newUser.role },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    )
-    res.status(201).json({ message: "User saved", token, user: newUser })
+    console.log('here in backend')
+    const {
+      clubName, title, description, location, mode,
+      date, time, registrationDeadline,
+      customFieldLabel, customFieldValue, associatedLinks
+    } = req.body
+
+    if (!req.file) return res.status(400).json({ success: false, message: "Image file is required" })
+
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'events',
+      public_id: `${uuidv4()}_${req.file.originalname}`,
+      resource_type: 'image'
+    })
+
+    // Remove the local file after upload
+    fs.unlinkSync(req.file.path)
+
+    const newEvent = new Event({
+      clubName, title, description, location, mode: mode || 'Offline',
+      date: new Date(date), time, registrationDeadline: new Date(registrationDeadline),
+      customFieldLabel, customFieldValue,
+      associatedLinks: JSON.parse(associatedLinks || '[]'),
+      imageUrl: result.secure_url
+    })
+
+    await newEvent.save()
+    console.log("Events returned to frontend:", events.length);
+events.forEach(e => console.log(e.title, e.date));
+    res.status(201).json({ success: true, event: newEvent })
+
   } catch (err) {
-    console.error("❌ Error saving user:", err)
-    res.status(500).json({ error: err.message })
+    if (req.file) fs.unlinkSync(req.file.path)
+    res.status(500).json({ success: false, error: err.message })
   }
 })
+// eventsController.js
 
-// Optional: Add a DB ping endpoint
+app.get('/events/today', async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Offset in milliseconds for IST (UTC+5:30)
+    const istOffsetMs = 5.5 * 60 * 60 * 1000;
+
+    // Convert current time to IST
+    const istNow = new Date(now.getTime() + istOffsetMs);
+
+    // Get IST start and end of the day
+    const istStart = new Date(istNow);
+    istStart.setHours(0, 0, 0, 0);
+
+    const istEnd = new Date(istNow);
+    istEnd.setHours(24, 0, 0, 0);
+
+    // Convert those IST boundaries back to UTC for MongoDB query
+    const utcStart = new Date(istStart.getTime() - istOffsetMs);
+    const utcEnd = new Date(istEnd.getTime() - istOffsetMs);
+
+    console.log("Query UTC range:", utcStart.toISOString(), "to", utcEnd.toISOString());
+
+    const events = await Event.find({
+      date: { $gte: utcStart, $lt: utcEnd },
+    });
+
+    res.status(200).json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch today's events" });
+  }
+});
+
+
+
+// New route to get logged-in user's profile
+app.get('/profile', authenticateToken, (req, res) => {
+  res.json({ success: true, user: req.user })
+})
+// Get events by club name
+app.get('/api/clubs/:clubName/events', async (req, res) => {
+  try {
+    const { clubName } = req.params;
+    const events = await Event.find({ clubName });
+
+    if (!events || events.length === 0) {
+      return res.status(404).json({ success: false, message: 'No events found for this club.' });
+    }
+
+    res.status(200).json({ success: true, events });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+});
+
 app.get('/ping-db', async (req, res) => {
   try {
-    const admin = mongoose.connection.db.admin()
-    const ping = await admin.ping()
+    const ping = await mongoose.connection.db.admin().ping()
     res.send({ success: true, message: "MongoDB is reachable", ping })
   } catch (err) {
     res.status(500).send({ success: false, message: "MongoDB not reachable", error: err.message })

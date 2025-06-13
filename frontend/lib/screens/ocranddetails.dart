@@ -9,7 +9,8 @@ import 'package:http/http.dart' as http;
 class DetailsPage extends StatefulWidget {
   @override
    final String phone;
-  const DetailsPage({required this.phone, super.key});
+   final String token;
+ const DetailsPage({required this.phone, required this.token, super.key});
   _DetailsPageState createState() => _DetailsPageState();
 }
 
@@ -267,8 +268,8 @@ class _DetailsPageState extends State<DetailsPage> {
     };
 
     final response = await http.post(
-      Uri.parse('https://cfc9-2405-201-c42a-4810-fd18-a817-51c3-291c.ngrok-free.app/api/users'),
-      headers: {'Content-Type': 'application/json'},
+      Uri.parse('https://3332-2405-201-c42a-4810-a00f-8fa1-4c71-7bf0.ngrok-free.app/api/users'),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${widget.token}', },
       body: jsonEncode(userData),
     );
 
@@ -278,7 +279,7 @@ class _DetailsPageState extends State<DetailsPage> {
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
+        MaterialPageRoute(builder: (context) => HomeScreen(widget.token)),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

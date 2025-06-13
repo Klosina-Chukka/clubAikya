@@ -5,7 +5,7 @@ import 'package:clubaikya/screens/home_screen.dart';
 import 'package:clubaikya/screens/ocranddetails.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-const String baseUrl = 'https://cfc9-2405-201-c42a-4810-fd18-a817-51c3-291c.ngrok-free.app';
+const String baseUrl = 'https://4274-2405-201-c42a-4810-30a2-fb9e-81e0-e319.ngrok-free.app';
 
 class SignInScreen extends StatefulWidget {
   @override
@@ -51,32 +51,47 @@ class _SignInScreenState extends State<SignInScreen> {
 
     if (response.statusCode == 200 && result['success'] == true && result.containsKey('token')) {
       await storage.write(key: 'jwt', value: result['token']);
+      String? check = await storage.read(key: 'jwt');
+      print('Token written and now read back: $check');
       setState(() => isOtpVerified = true);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('OTP verified! You are logged in.')));
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen(check)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid OTP or user not registered.')));
     }
   }
 
   Future<void> verifyOtpForSignUp() async {
-    final phone = _phoneController.text.trim();
-    final response = await http.post(
-      Uri.parse('$baseUrl/verify-otp'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'phone': phone, 'otp': _otpController.text}),
-    );
+  final phone = _phoneController.text.trim();
+  final response = await http.post(
+    Uri.parse('$baseUrl/verify-otp'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({'phone': phone, 'otp': _otpController.text}),
+  );
 
-    final result = jsonDecode(response.body);
+  final result = jsonDecode(response.body);
 
-    if (response.statusCode == 200 && result['success'] == true) {
-      setState(() => isOtpVerified = true);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('OTP verified! Proceed to complete account.')));
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => DetailsPage(phone: phone,)));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid OTP')));
+  if (response.statusCode == 200 && result['success'] == true) {
+    String jwtToken = '';
+    if (result.containsKey('token')) {
+      jwtToken = result['token'];
+      await storage.write(key: 'jwt', value: jwtToken); 
+      String? check = await storage.read(key: 'jwt');
+      print('Token written and now read back: $check'); // Save token securely
     }
+    
+    setState(() => isOtpVerified = true);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('OTP verified! Proceed to complete account.')));
+    
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => DetailsPage(phone: phone, token: jwtToken)),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid OTP')));
   }
+}
+
 
   Future<void> storeUser() async {
     final phone = _phoneController.text.trim();

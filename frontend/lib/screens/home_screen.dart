@@ -1,165 +1,256 @@
-import 'package:flutter/material.dart';
 import 'package:clubaikya/screens/ClubDetailPage.dart';
+import 'package:flutter/material.dart';
 import 'package:clubaikya/screens/clubinfo.dart';
+import 'package:clubaikya/screens/profilepage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class HomeScreen extends StatelessWidget {
-  final List<Map<String, String>> clubs = [
-    {"name": "Ragavarsha Club", "image": "assets/clublogos/ragclub.png"},
-    {"name": "Watts Guild Club", "image": "assets/clublogos/watts.jpg"},
-    {"name": "Film and Videography Club", "image": "assets/clublogos/filmclub.jpg"},
-    {"name": "Coding Club", "image": "assets/clublogos/codeclub.jpg"},
-    {"name": "Photography Club", "image": "assets/clublogos/photo.jpg"},
-    {"name": "Elite Feet", "image": "assets/clublogos/club1.jpg"},
-    {"name": "Art Meraki", "image": "assets/clublogos/artclub.png"},
-    {"name": "Environmental Club", "image": "assets/clublogos/evnclub.jpg"},
-  ];
-
+class HomeScreen extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-  preferredSize: Size.fromHeight(70),
-  child: Container(
-    decoration: BoxDecoration(
-      color: Color(0xff75bdc4),
-      borderRadius: BorderRadius.vertical(
-        bottom: Radius.circular(16),  // gentle rounding
-      ),
-    ),
-    child: SafeArea(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Explore Clubs',
-              style: TextStyle(
-                color: Colors.black87,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Helvetica',
-                fontSize: 22,
-              ),
-            ),
-            Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.search, color: Colors.black87),
-                  onPressed: () {
-                    // TODO: search logic
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.notifications_none, color: Colors.black87),
-                  onPressed: () {
-                    // TODO: notifications page
-                  },
-                ),
-                Hero(
-                  tag: 'profile-hero',
-                  child: IconButton(
-                    icon: Icon(Icons.account_circle, color: Colors.black87, size: 28),
-                    onPressed: () {
-                      // TODO: profile page navigation
-                    },
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
-      ),
-    ),
-  ),
-),
-
-
-      body: GridView.builder(
-        padding: EdgeInsets.all(10),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 0.9,
-        ),
-        itemCount: clubs.length,
-        itemBuilder: (context, index) {
-          return ClubCard(
-            clubName: clubs[index]["name"]!,
-            imagePath: clubs[index]["image"]!,
-
-          );
-        },
-      ),
-    );
-  }
+  final token;
+  const HomeScreen(this.token);
+  _HomeScreenState createState() => _HomeScreenState();
 }
 
-class ClubCard extends StatefulWidget {
-  final String clubName;
-  final String imagePath;
-
-  ClubCard({required this.clubName, required this.imagePath});
-
-  @override
-  _ClubCardState createState() => _ClubCardState();
-}
-
-class _ClubCardState extends State<ClubCard> {
-  double _opacity = 0.0;
+class _HomeScreenState extends State<HomeScreen> {
+  final List<Map<String, String>> todaysEvents = [];
+  String searchQuery = "";
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(Duration(milliseconds: 100), () {
+    fetchTodaysEvents();
+  }
+
+  Future<void> fetchTodaysEvents() async {
+    final response = await http.get(Uri.parse('https://4274-2405-201-c42a-4810-30a2-fb9e-81e0-e319.ngrok-free.app/events/today'));
+    if (response.statusCode == 200) {
+      final List<dynamic> events = json.decode(response.body);
+      print("Fetched ${events.length} events");
       setState(() {
-        _opacity = 1.0;
+        todaysEvents.clear();
+        for (var e in events) {
+          print("Title: ${e['title']}, Time: ${e['time']}, Club: ${e['clubName']},'description': ${e['description']}");
+          todaysEvents.add({
+            'title': e['title'],
+            'time': e['time'],
+            'club': e['clubName'],
+            'description': e['description'],
+          });
+        }
       });
-    });
+    } else {
+      print('Failed to load events');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: Duration(milliseconds: 600),
-      opacity: _opacity,
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ClubDetailPage(
-                clubName: widget.clubName,
-                clubDescription: getClubDescription(widget.clubName),
-                clubLogo: widget.imagePath,
-                pastEvents: getClubEvents(widget.clubName),
-                instagramLink: getInstagramLink(widget.clubName),
-                websiteLink: getWebsiteLink(widget.clubName),
-              ),
-            ),
-          );
-        },
-        child: Card(
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    final filteredClubs = clubs
+        .where((club) => club["name"]!
+            .toLowerCase()
+            .contains(searchQuery.toLowerCase()))
+        .toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Color(0xff75bdc4),
+        title: Text('Explore Clubs', style: TextStyle(color: Colors.black)),
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.account_circle, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProfilePage(widget.token),
+                ),
+              );
+            },
           ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: fetchTodaysEvents,
+        child: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              Expanded(
-                child: Image.asset(
-                  widget.imagePath,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search clubs...',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value;
+                    });
+                  },
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Text(
-                  widget.clubName,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
+              Container(
+                height: 200,
+                child: todaysEvents.isEmpty
+                    ? Card(
+                        margin: EdgeInsets.all(16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: 6,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text(
+                              'No events today',
+                              style: TextStyle(fontSize: 16, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: todaysEvents.length,
+                        itemBuilder: (context, index) {
+                          final event = todaysEvents[index];
+                          final club = clubs.firstWhere(
+                            (c) => c['name'] == event['club'],
+                            orElse: () => {},
+                          );
+                          return GestureDetector(
+                            onTap: () {
+                              if (club.isNotEmpty) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ClubDetailPage(
+                                      clubName: club['name'],
+                                      clubDescription: club['description'],
+                                      clubLogo: club['logo'],
+                                      instagramLink: club['instagram'],
+                                      websiteLink: club['website'],
+                                      token: widget.token,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Stack(
+                              children: [
+                                Card(
+                                  margin: EdgeInsets.all(8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 7,
+                                  child: Container(
+                                    width: 280,
+                                    padding: EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          event['title'] == 'null'
+                                              ? 'untitled'
+                                              : event['title']!.toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                    Text("${event['description']}",style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.normal,
+                                          ),),
+                                        Text("Time: ${event['time']}",style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w500,
+                                          ),),
+                                        Text("Club: ${event['club']}",style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w500,
+                                          ),),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (club.isNotEmpty && club['logo'] != null)
+                                  Positioned(
+                                    top: 16,
+                                    right: 16,
+                                    child: CircleAvatar(
+                                      backgroundImage: AssetImage(club['logo']),
+                                      radius: 35,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              GridView.builder(
+                padding: EdgeInsets.all(10),
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 0.85,
                 ),
+                itemCount: filteredClubs.length,
+                itemBuilder: (context, index) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ClubDetailPage(
+                            clubName: filteredClubs[index]['name'],
+                            clubDescription: filteredClubs[index]['description'],
+                            clubLogo: filteredClubs[index]['logo'],
+                            instagramLink: filteredClubs[index]['instagram'],
+                            websiteLink: filteredClubs[index]['website'],
+                            token: widget.token,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: AssetImage(filteredClubs[index]['logo']!),
+                            radius: 70,
+                          ),
+                          SizedBox(height: 12),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text(
+                              filteredClubs[index]['name'],
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),

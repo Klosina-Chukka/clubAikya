@@ -10,18 +10,16 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+   const MyApp({super.key});
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      
       title: 'Club Aikya',
       debugShowCheckedModeBanner: false,
       home: SplashHandlerScreen(),
-      routes: {
-        '/login': (_) => SignInScreen(),
-        '/home': (_) => HomeScreen(),
-      },
+      
     );
   }
 }
@@ -34,7 +32,7 @@ class SplashHandlerScreen extends StatefulWidget {
 }
 
 class _SplashHandlerScreenState extends State<SplashHandlerScreen> {
-  final storage = FlutterSecureStorage();
+  final storage1 = FlutterSecureStorage();
 
   @override
   void initState() {
@@ -46,10 +44,12 @@ class _SplashHandlerScreenState extends State<SplashHandlerScreen> {
     await Firebase.initializeApp();
     await Future.delayed(const Duration(seconds: 3)); // splash delay
 
-    String? token = await storage.read(key: 'jwt');
-
+    String? token = await storage1.read(key: 'jwt');
+    print('📦 JWT from secure storage: $token');
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, token != null ? '/home' : '/login');
+
+ 
+    Navigator.pushReplacement(context, MaterialPageRoute( builder:(_) => token!= null ? HomeScreen(token) : SignInScreen()) );
   }
 
   @override
