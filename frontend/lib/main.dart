@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:clubaikya/screens/sign_in_screen.dart';
 import 'package:clubaikya/screens/home_screen.dart';
-
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  OneSignal.initialize("c07579f1-3b55-40a1-87f3-642019d265c9");
+  OneSignal.Notifications.requestPermission(true);
   runApp(const MyApp());
 }
 
@@ -41,7 +42,7 @@ class _SplashHandlerScreenState extends State<SplashHandlerScreen> {
   }
 
   Future<void> handleStartupLogic() async {
-    await Firebase.initializeApp();
+    
     await Future.delayed(const Duration(seconds: 3)); // splash delay
 
     String? token = await storage1.read(key: 'jwt');

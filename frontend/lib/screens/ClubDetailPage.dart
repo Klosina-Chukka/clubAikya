@@ -219,7 +219,7 @@ Future<void> fetchRole() async {
                                       eventMode: event['mode'] ?? 'Not specified',
                                       eventDate: event['date']?.toString().substring(0, 10) ?? 'Unknown Date',
                                       eventTime: event['time'] ?? 'Unknown Time',
-                                      eventDeadline: event['deadline']?.toString().substring(0, 10) ?? 'No Deadline',
+                                      eventDeadline: event['registrationDeadline']?.toString().substring(0, 10) ?? 'No Deadline',
                                       eventImageUrl: event['imageUrl'] ?? '',
                                       eventLinks: (event['associatedLinks'] as List<dynamic>)
                                           .map((link) => {

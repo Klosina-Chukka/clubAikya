@@ -268,12 +268,12 @@ class _DetailsPageState extends State<DetailsPage> {
     };
 
     final response = await http.post(
-      Uri.parse('https://3332-2405-201-c42a-4810-a00f-8fa1-4c71-7bf0.ngrok-free.app/api/users'),
+      Uri.parse('https://4274-2405-201-c42a-4810-30a2-fb9e-81e0-e319.ngrok-free.app/api/users'),
       headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${widget.token}', },
       body: jsonEncode(userData),
     );
 
-    if (response.statusCode == 201) {
+    if (response.statusCode == 200 || response.statusCode==201) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Details saved successfully!')),
       );
