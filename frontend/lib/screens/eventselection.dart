@@ -117,7 +117,7 @@ class _ClubPageState extends State<ClubPage> {
     };
   }).where((link) => link['label']!.isNotEmpty && link['url']!.isNotEmpty).toList();
 print('Token: ${widget.token}');
-  var uri = Uri.parse('https://4274-2405-201-c42a-4810-30a2-fb9e-81e0-e319.ngrok-free.app/api/events'); // UPDATE THIS
+  var uri = Uri.parse('https://9cda-2405-201-c42a-4810-4c2-7d9-d550-20a1.ngrok-free.app/api/events'); // UPDATE THIS
   var request = http.MultipartRequest('POST', uri);
   request.headers['Authorization'] = 'Bearer ${widget.token}';
   request.fields['clubName'] = widget.clubName;

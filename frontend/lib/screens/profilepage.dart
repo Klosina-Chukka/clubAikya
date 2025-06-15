@@ -32,7 +32,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       print('Retrieved token: ${widget.token}');
       
-      final url = Uri.parse('https://4274-2405-201-c42a-4810-30a2-fb9e-81e0-e319.ngrok-free.app/profile');
+      final url = Uri.parse('https://9cda-2405-201-c42a-4810-4c2-7d9-d550-20a1.ngrok-free.app/profile');
       
       final response = await http.get(
         url,

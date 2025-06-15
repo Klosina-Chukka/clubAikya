@@ -211,7 +211,7 @@ app.post("/api/events", authenticateToken, upload.single('image'), async (req, r
 const cron = require('node-cron');
 
 // 🔁 Daily notification at 9:00 AM IST (which is 3:30 AM UTC)
-cron.schedule('20 13 * * *', async () => {
+cron.schedule('16 14 * * *', async () => {
   console.log('⏰ [CRON] Running daily event notifier at', new Date().toLocaleString());
 
   // IST math
@@ -267,6 +267,39 @@ app.post("/api/users", async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 }) 
+  try {
+    const now = new Date();
+
+    // Offset in milliseconds for IST (UTC+5:30)
+    const istOffsetMs = 5.5 * 60 * 60 * 1000;
+
+    // Convert current time to IST
+    const istNow = new Date(now.getTime() + istOffsetMs);
+
+    // Get IST start and end of the day
+    const istStart = new Date(istNow);
+    istStart.setHours(0, 0, 0, 0);
+
+    const istEnd = new Date(istNow);
+    istEnd.setHours(24, 0, 0, 0);
+
+    // Convert those IST boundaries back to UTC for MongoDB query
+    const utcStart = new Date(istStart.getTime() - istOffsetMs);
+    const utcEnd = new Date(istEnd.getTime() - istOffsetMs);
+
+    console.log("Query UTC range:", utcStart.toISOString(), "to", utcEnd.toISOString());
+
+    const events = await Event.find({
+      date: { $gte: utcStart, $lt: utcEnd },
+    });
+
+    res.status(200).json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch today's events" });
+  }
+});
+
 
 
 // New route to get logged-in user's profile
@@ -276,9 +309,10 @@ app.get('/profile', authenticateToken, (req, res) => {
 // Get events by club name
 app.get('/api/clubs/:clubName/events', async (req, res) => {
   try {
+
     const { clubName } = req.params;
     const events = await Event.find({ clubName });
-
+    console.log('hello');
     if (!events || events.length === 0) {
       return res.status(404).json({ success: false, message: 'No events found for this club.' });
     }

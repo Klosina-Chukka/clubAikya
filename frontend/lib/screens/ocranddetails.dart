@@ -268,7 +268,7 @@ class _DetailsPageState extends State<DetailsPage> {
     };
 
     final response = await http.post(
-      Uri.parse('https://4274-2405-201-c42a-4810-30a2-fb9e-81e0-e319.ngrok-free.app/api/users'),
+      Uri.parse('https://9cda-2405-201-c42a-4810-4c2-7d9-d550-20a1.ngrok-free.app/api/users'),
       headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${widget.token}', },
       body: jsonEncode(userData),
     );
