@@ -256,7 +256,7 @@ class _DetailsPageState extends State<DetailsPage> {
       return;
     }
 
-    final userData = {
+     final userData = {
       'phone': widget.phone,
       'name': name,
       'rollNo': rollNo,
@@ -267,12 +267,14 @@ class _DetailsPageState extends State<DetailsPage> {
       'role': selectedRole
     };
 
-    final response = await http.post(
-      Uri.parse('https://9cda-2405-201-c42a-4810-4c2-7d9-d550-20a1.ngrok-free.app/api/users'),
-      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${widget.token}', },
-      body: jsonEncode(userData),
-    );
-
+    final response = await http.put(  // <-- change POST to PUT
+  Uri.parse('https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/api/users/${widget.phone}'),
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ${widget.token}',
+  },
+  body: jsonEncode(userData),
+);
     if (response.statusCode == 200 || response.statusCode==201) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Details saved successfully!')),

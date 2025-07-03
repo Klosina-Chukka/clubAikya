@@ -42,7 +42,7 @@ class _ClubDetailPageState extends State<ClubDetailPage> {
 
   Future<void> fetchEvents() async {
     final url = Uri.parse(
-        'https://9cda-2405-201-c42a-4810-4c2-7d9-d550-20a1.ngrok-free.app/api/clubs/${widget.clubName}/events');
+        'https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/api/clubs/${widget.clubName}/events');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -70,7 +70,7 @@ Future<void> fetchRole() async {
     }
 
     final url = Uri.parse(
-        'https://9cda-2405-201-c42a-4810-4c2-7d9-d550-20a1.ngrok-free.app/profile');
+        'https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/profile');
 
     final response = await http.get(
       url,

@@ -23,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> fetchTodaysEvents() async {
-    final response = await http.get(Uri.parse('https://9cda-2405-201-c42a-4810-4c2-7d9-d550-20a1.ngrok-free.app/events/today'));
+    final response = await http.get(Uri.parse('https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/events/today'));
     if (response.statusCode == 200) {
       final List<dynamic> events = json.decode(response.body);
       print("Fetched ${events.length} events");

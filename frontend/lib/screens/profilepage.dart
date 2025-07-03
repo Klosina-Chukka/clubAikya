@@ -1,3 +1,4 @@
+import 'package:clubaikya/screens/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -5,7 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ProfilePage extends StatefulWidget {
   final token;
-   const ProfilePage(this.token);
+  const ProfilePage(this.token);
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -16,12 +17,9 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? userData;
   bool isLoading = true;
   String? errorMessage;
-  
+
   Future<void> fetchProfile() async {
     try {
-      // Read token from secure storage
-      
-      
       if (widget.token == null) {
         setState(() {
           isLoading = false;
@@ -30,10 +28,8 @@ class _ProfilePageState extends State<ProfilePage> {
         return;
       }
 
-      print('Retrieved token: ${widget.token}');
-      
-      final url = Uri.parse('https://9cda-2405-201-c42a-4810-4c2-7d9-d550-20a1.ngrok-free.app/profile');
-      
+      final url = Uri.parse('https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/profile');
+
       final response = await http.get(
         url,
         headers: {
@@ -42,11 +38,8 @@ class _ProfilePageState extends State<ProfilePage> {
         },
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200 && data['success']) {
         setState(() {
           userData = data['user'];
@@ -56,7 +49,6 @@ class _ProfilePageState extends State<ProfilePage> {
         throw Exception(data['message'] ?? 'Failed to load profile');
       }
     } catch (err) {
-      print('Error fetching profile: $err');
       setState(() {
         isLoading = false;
         errorMessage = err.toString();
@@ -68,6 +60,24 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     fetchProfile();
+  }
+
+  AppBar buildAppBar(Color primaryColor) {
+    return AppBar(
+      backgroundColor: primaryColor,
+      title: Text("Profile"),
+      actions: [
+        IconButton(
+          icon: Icon(Icons.logout),
+          onPressed: () async {
+            await storage.deleteAll();
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => SignInScreen()),(Route<dynamic> route) => false,
+            );
+          },
+        )
+      ],
+    );
   }
 
   Widget buildInfoTile(String label, String value, IconData icon) {
@@ -89,12 +99,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (isLoading) {
       return Scaffold(
+        appBar: buildAppBar(primaryColor),
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (errorMessage != null) {
       return Scaffold(
+        appBar: buildAppBar(primaryColor),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -113,11 +125,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (userData == null) {
       return Scaffold(
+        appBar: buildAppBar(primaryColor),
         body: Center(child: Text("No profile data available.")),
       );
     }
 
     return Scaffold(
+      appBar: buildAppBar(primaryColor),
       body: SingleChildScrollView(
         child: Column(
           children: [

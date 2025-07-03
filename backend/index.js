@@ -250,6 +250,7 @@ cron.schedule('16 14 * * *', async () => {
   timezone: 'Asia/Kolkata'
 });
 
+
 app.post("/api/users", async (req, res) => {
   try {
     console.log("📥 Received user data:", req.body)
@@ -259,7 +260,7 @@ app.post("/api/users", async (req, res) => {
     const token = jwt.sign(
       { id: newUser._id, phone: newUser.phone, role: newUser.role },
       JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '7d' }
     )
     res.status(201).json({ message: "User saved", token, user: newUser })
   } catch (err) {
@@ -267,6 +268,43 @@ app.post("/api/users", async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 }) 
+app.put('/api/users/:phone', authenticateToken, async (req, res) => {
+  try {
+    console.log(`🔍 Updating phone: ${req.params.phone}`);
+    console.log(`📥 Body:`, req.body);
+
+    const update = {
+      name: req.body.name,
+      rollNo: req.body.rollNo,
+      course: req.body.course,
+      branch: req.body.branch,
+      dob: req.body.dob ? new Date(req.body.dob) : undefined,
+      validity: req.body.validity,
+      role: req.body.role
+    };
+    Object.keys(update).forEach(key => update[key] === undefined && delete update[key]);
+    console.log(`➡ Update:`, update);
+
+    const user = await User.findOneAndUpdate(
+      { phone: req.params.phone },
+      update,
+      { new: true }
+    );
+
+    if (user) {
+      console.log(`✅ Updated user:`, user);
+      res.status(200).json({ success: true, user });
+    } else {
+      console.log(`❌ No user found for phone: ${req.params.phone}`);
+      res.status(404).json({ success: false, message: 'User not found' });
+    }
+  } catch (err) {
+    console.error(`❌ Update error:`, err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+});
+
+app.get('/events/today', async (req, res) => {
   try {
     const now = new Date();
 
