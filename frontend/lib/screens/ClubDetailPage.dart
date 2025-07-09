@@ -1,4 +1,4 @@
-import 'package:clubaikya/screens/eventdetailpage.dart';
+import 'package:clubaikya/screens/EventPage.dart';
 import 'package:clubaikya/screens/eventselection.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';

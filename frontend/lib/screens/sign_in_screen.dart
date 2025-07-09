@@ -8,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 const String baseUrl = 'https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app';
 
 class SignInScreen extends StatefulWidget {
+  const SignInScreen({Key? key}) : super(key: key);
   @override
   _SignInScreenState createState() => _SignInScreenState();
 }
@@ -55,7 +56,7 @@ class _SignInScreenState extends State<SignInScreen> {
       print('Token written and now read back: $check');
       setState(() => isOtpVerified = true);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('OTP verified! You are logged in.')));
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen(check)));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen(result['token'])));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid OTP or user not registered.')));
     }
