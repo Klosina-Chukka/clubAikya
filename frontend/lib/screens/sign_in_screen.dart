@@ -5,7 +5,7 @@ import 'package:clubaikya/screens/home_screen.dart';
 import 'package:clubaikya/screens/ocranddetails.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-const String baseUrl = 'https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app';
+const String baseUrl = 'https://d0baa0944589.ngrok-free.app';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({Key? key}) : super(key: key);

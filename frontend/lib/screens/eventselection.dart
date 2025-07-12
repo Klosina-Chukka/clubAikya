@@ -35,7 +35,7 @@ class _ClubPageState extends State<ClubPage> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
     if (picked != null) {
@@ -61,7 +61,7 @@ class _ClubPageState extends State<ClubPage> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
     if (picked != null) {
@@ -116,18 +116,38 @@ class _ClubPageState extends State<ClubPage> {
       'url': link['url']!.text.trim(),
     };
   }).where((link) => link['label']!.isNotEmpty && link['url']!.isNotEmpty).toList();
-print('Token: ${widget.token}');
-  var uri = Uri.parse('https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/api/events'); // UPDATE THIS
+
+  var uri = Uri.parse('https://d0baa0944589.ngrok-free.app/api/events');
   var request = http.MultipartRequest('POST', uri);
   request.headers['Authorization'] = 'Bearer ${widget.token}';
+
   request.fields['clubName'] = widget.clubName;
   request.fields['title'] = _eventTitleController.text.trim();
   request.fields['description'] = _eventDescController.text.trim();
   request.fields['location'] = _eventLocationController.text.trim();
   request.fields['mode'] = _eventMode;
-  request.fields['date'] = _selectedDate!.toIso8601String();
+
+  // ✅ Set safe noon time to avoid date shifting
+  request.fields['date'] = DateTime(
+    _selectedDate!.year,
+    _selectedDate!.month,
+    _selectedDate!.day,
+    _selectedTime!.hour,
+  _selectedTime!.minute,
+    12, 0, 0,
+  ).toUtc().toIso8601String();
+
   request.fields['time'] = _selectedTime!.format(context);
-  request.fields['registrationDeadline'] = _registrationDeadline!.toIso8601String();
+
+  request.fields['registrationDeadline'] = DateTime(
+    _registrationDeadline!.year,
+    _registrationDeadline!.month,
+    _registrationDeadline!.day,
+    _registrationDeadline!.hour,
+    _registrationDeadline!.minute,
+    12, 0, 0,
+  ).toUtc().toIso8601String();
+
   request.fields['customFieldLabel'] = _customFieldLabelController.text.trim();
   request.fields['customFieldValue'] = _customFieldValueController.text.trim();
   request.fields['associatedLinks'] = jsonEncode(finalLinks);
@@ -136,7 +156,7 @@ print('Token: ${widget.token}');
 
   var response = await request.send();
 
-  if (response.statusCode == 201 ||response.statusCode == 200 ) {
+  if (response.statusCode == 201 || response.statusCode == 200) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Event saved successfully')),
     );

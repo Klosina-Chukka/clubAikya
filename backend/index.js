@@ -157,95 +157,114 @@ app.post("/api/events", authenticateToken, upload.single('image'), async (req, r
 
     const newEvent = new Event({
       clubName, title, description, location, mode,
-      date: new Date(date), time, registrationDeadline: new Date(registrationDeadline),
+      date: new Date(req.body.date), time, registrationDeadline: new Date(req.body.registrationDeadline),
       customFieldLabel, customFieldValue,
       associatedLinks: JSON.parse(associatedLinks || '[]'),
       imageUrl: result.secure_url
-    });
 
-    await newEvent.save();
-    await sendNotification(`📢 New Event: ${title}`, `${clubName} is hosting ${title} on ${date} at ${time}`);
-    res.status(201).json({ success: true, event: newEvent });
+    })
+
+    await newEvent.save()
+console.log("Received date (UTC):", new Date(req.body.date));
+console.log("Date in IST:", new Date(req.body.date).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }));
+
+    // ✅ Send OneSignal push notification to all users
+    const notifTitle = `📢 New Event: ${title}`
+    const notifMessage = `${clubName} is hosting ${title} on ${date} at ${time}`
+    await sendNotification(notifTitle, notifMessage)
+
+    console.log("New event created and notification sent.")
+    res.status(201).json({ success: true, event: newEvent })
   } catch (err) {
-    if (req.file) fs.unlinkSync(req.file.path);
-    res.status(500).json({ success: false, error: err.message });
+    if (req.file) fs.unlinkSync(req.file.path)
+    res.status(500).json({ success: false, error: err.message })
   }
-});
+})
+
 
 // 👤 Create or Update User
-app.post("/api/users", async (req, res) => {
-  try {
-    const newUser = new User(req.body);
-    await newUser.save();
-    const token = jwt.sign({ id: newUser._id, phone: newUser.phone, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ message: "User saved", token, user: newUser });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/users/:phone', authenticateToken, async (req, res) => {
-  try {
-    const update = {
-      name: req.body.name,
-      rollNo: req.body.rollNo,
-      course: req.body.course,
-      branch: req.body.branch,
-      dob: req.body.dob ? new Date(req.body.dob) : undefined,
-      validity: req.body.validity,
-      role: req.body.role
-    };
-    Object.keys(update).forEach(key => update[key] === undefined && delete update[key]);
-
-    const user = await User.findOneAndUpdate(
-      { phone: req.params.phone },
-      update,
-      { new: true }
-    );
-
-    if (user) {
-      res.status(200).json({ success: true, user });
-    } else {
-      res.status(404).json({ success: false, message: 'User not found' });
-    }
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
-  }
-});
-
-// 🔍 Today's Events
 app.get("/api/events/today", async (req, res) => {
   try {
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const istNow = new Date(now.getTime() + istOffset);
-    const startIST = new Date(istNow.setHours(0, 0, 0, 0));
-    const endIST = new Date(istNow.setHours(24, 0, 0, 0));
-    const utcStart = new Date(startIST.getTime() - istOffset);
-    const utcEnd = new Date(endIST.getTime() - istOffset);
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
 
-    const events = await Event.find({ date: { $gte: utcStart, $lt: utcEnd } });
+    const [day, month, year] = formatter.format(new Date()).split("/");
+
+    const startOfIST = new Date(`${year}-${month}-${day}T00:00:00+05:30`);
+    const endOfIST = new Date(`${year}-${month}-${day}T23:59:59.999+05:30`);
+
+    const startUTC = new Date(startOfIST.toISOString());
+    const endUTC = new Date(endOfIST.toISOString());
+
+    const events = await Event.find({
+      date: {
+        $gte: startUTC,
+        $lte: endUTC,
+      }
+    }).sort({ time: 1 }); // 👈 Sort by time (ascending)
+
     res.status(200).json(events);
   } catch (err) {
+    console.error("Fetch error:", err);
     res.status(500).json({ error: "Failed to fetch today's events" });
   }
 });
+app.delete("/api/events/:id", authenticateToken, async (req, res) => {
+  try {
+    await Event.findByIdAndDelete(req.params.id);
+    res.status(200).json({ success: true, message: "Event deleted" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+app.delete('/api/announcements/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    console.log("ID received:", id);
+
+    const deleted = await Announcement.findByIdAndDelete(id);
+    console.log("Delete ID received:", req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Announcement not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Announcement deleted" });
+  } catch (err) {
+    console.error("Delete Error:", err);
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
+});
+
+
 
 // 📢 Announcements
 app.post('/api/announcements/create', async (req, res) => {
   try {
     const { title, description, eventName, club } = req.body;
+
     if (!title || !eventName || !club) {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
     const announcement = new Announcement({ title, description, eventName, club });
     await announcement.save();
+
+    // ✅ Send OneSignal Notification (reuse from event route)
+    const notifTitle = `📢 New Announcement from ${club}`;
+    const notifMessage = `${eventName}: ${title}`;
+    await sendNotification(notifTitle, notifMessage);
+
+    console.log("New announcement created and notification sent.");
     res.status(201).json({ success: true, announcement });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error creating announcement', error: err.message });
   }
 });
+
 
 app.get('/api/announcements/all', async (req, res) => {
   try {
@@ -262,6 +281,7 @@ app.get('/api/announcements/all', async (req, res) => {
       }
 
       return {
+        _id: a.id,
         title: a.title,
         description: a.description,
         eventName: a.eventName,

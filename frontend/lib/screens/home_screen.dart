@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> fetchTodaysEvents() async {
-    final response = await http.get(Uri.parse('https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/events/today'));
+    final response = await http.get(Uri.parse('https://d0baa0944589.ngrok-free.app/api/events/today'));
     if (response.statusCode == 200) {
       final List<dynamic> events = json.decode(response.body);
       setState(() {
@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchAnnouncements() async {
     final url =
-        Uri.parse('https://3d83feea18ab.ngrok-free.app/api/announcements/all');
+        Uri.parse('https://d0baa0944589.ngrok-free.app/api/announcements/all');
 
     try {
       final response = await http.get(url);
@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () async {
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AnnouncementsPage()),
+                  MaterialPageRoute(builder: (_) => AnnouncementsPage(widget.token)),
                 );
                 setState(() {
                   for (var a in announcements) {

@@ -28,7 +28,7 @@ class _ProfilePageState extends State<ProfilePage> {
         return;
       }
 
-      final url = Uri.parse('https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/profile');
+      final url = Uri.parse('https://d0baa0944589.ngrok-free.app/profile');
 
       final response = await http.get(
         url,

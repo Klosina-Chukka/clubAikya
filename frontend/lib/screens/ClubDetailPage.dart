@@ -5,7 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
-
+import 'package:clubaikya/screens/PostannouncementPage.dart';
 class ClubDetailPage extends StatefulWidget {
   final String clubName;
   final String clubDescription;
@@ -32,7 +32,7 @@ class _ClubDetailPageState extends State<ClubDetailPage> {
   List<dynamic> events = [];
   bool isLoading = true;
   String userRole = '';
-
+   bool _isFabExpanded = false;
   @override
   void initState() {
     super.initState();
@@ -42,7 +42,7 @@ class _ClubDetailPageState extends State<ClubDetailPage> {
 
   Future<void> fetchEvents() async {
     final url = Uri.parse(
-        'https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/api/clubs/${widget.clubName}/events');
+        'https://d0baa0944589.ngrok-free.app/api/clubs/${widget.clubName}/events');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -70,7 +70,7 @@ Future<void> fetchRole() async {
     }
 
     final url = Uri.parse(
-        'https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/profile');
+        'https://d0baa0944589.ngrok-free.app/profile');
 
     final response = await http.get(
       url,
@@ -105,36 +105,20 @@ Future<void> fetchRole() async {
 
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(widget.clubName),
-        backgroundColor: const Color(0xff75bdc4),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (userRole == 'Admin') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ClubPage(clubName: widget.clubName,token:widget.token),
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Only admins can add events.")),
-            );
-          }
-        },
-        backgroundColor: const Color(0xff75bdc4),
-        child: const Icon(Icons.add),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            Row(
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.white,
+    appBar: AppBar(
+      title: Text(widget.clubName),
+      backgroundColor: const Color(0xff75bdc4),
+    ),
+    body: Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ListView(
+            children: [
+              Row(
               children: [
                 CircleAvatar(
                   backgroundImage: AssetImage(widget.clubLogo),
@@ -282,13 +266,182 @@ Future<void> fetchRole() async {
                                   ),
                                 ),
                               ),
+                              onLongPress: () async {
+  if (userRole != 'Admin') return;
+
+  final shouldDelete = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Delete Event"),
+      content: const Text("Are you sure you want to delete this event?"),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text("Delete", style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
+
+  if (shouldDelete == true) {
+    final eventId = event['_id']; // 👈 this is the MongoDB ID
+    final url = Uri.parse("https://d0baa0944589.ngrok-free.app/api/events/$eventId");
+
+    final response = await http.delete(
+      url,
+      headers: {
+        'Authorization': 'Bearer ${widget.token}',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        events.removeAt(index);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Event deleted successfully")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to delete event")),
+      );
+    }
+  }
+},
                             ),
                           );
                         },
-                      ),
-          ],
+                      )
+            ],
+          ),
         ),
+        if (userRole == 'Admin')
+        if (_isFabExpanded)
+  Positioned.fill(
+    child: GestureDetector(
+      onTap: () {
+        setState(() {
+          _isFabExpanded = false;
+        });
+      },
+      child: Container(
+        color: Colors.black54, // Semi-transparent black
       ),
-    );
-  }
+    ),
+  ),
+  Positioned(
+    bottom: 16,
+    right: 16,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 250),
+          opacity: _isFabExpanded ? 1.0 : 0.0,
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 250),
+            scale: _isFabExpanded ? 1.0 : 0.0,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+children: [
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+            ],
+          ),
+          child: const Text('Create Event', style: TextStyle(color: Colors.black)),
+        ),
+        FloatingActionButton(
+          heroTag: 'event',
+          mini: true,
+          backgroundColor: Colors.white,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ClubPage(
+                  clubName: widget.clubName,
+                  token: widget.token,
+                ),
+              ),
+            );
+          },
+          elevation: 6,
+          child: const Icon(Icons.event, color: Color(0xff75bdc4)),
+        ),
+      ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+            ],
+          ),
+          child: const Text('Post Announcement', style: TextStyle(color: Colors.black)),
+        ),
+        FloatingActionButton(
+          heroTag: 'announcement',
+          mini: true,
+          backgroundColor: Colors.white,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PostAnnouncementPage(
+                  clubName: widget.clubName,
+                ),
+              ),
+            );
+          },
+          elevation: 6,
+          child: const Icon(Icons.announcement, color: Color(0xff75bdc4)),
+        ),
+      ],
+    ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        ),
+        FloatingActionButton(
+          heroTag: 'main',
+          backgroundColor: const Color(0xff75bdc4),
+          onPressed: () {
+            setState(() {
+              _isFabExpanded = !_isFabExpanded;
+            });
+          },
+          elevation: 8,
+          child: Icon(_isFabExpanded ? Icons.close : Icons.add),
+        ),
+      ],
+    ),
+  ),
+
+      ],
+    ),
+  );
+}
 }

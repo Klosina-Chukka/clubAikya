@@ -6,13 +6,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:clubaikya/screens/EventPage.dart';
 
 class AnnouncementsPage extends StatefulWidget {
-  const AnnouncementsPage({super.key});
+  final String token;
+  const AnnouncementsPage(this.token,{super.key});
 
   @override
   State<AnnouncementsPage> createState() => _AnnouncementsPageState();
 }
 
 class _AnnouncementsPageState extends State<AnnouncementsPage> {
+  String userRole = '';
   List<Map<String, dynamic>> announcements = [];
   bool isLoading = true;
   List<String> seenTitles = [];
@@ -21,6 +23,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   void initState() {
     super.initState();
     loadSeenAndFetch();
+    fetchRole();
   }
 
   Future<void> loadSeenAndFetch() async {
@@ -30,7 +33,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   }
 
   Future<void> fetchAnnouncements() async {
-    final url = Uri.parse('https://3d83feea18ab.ngrok-free.app/api/announcements/all');
+    final url = Uri.parse('https://d0baa0944589.ngrok-free.app/api/announcements/all');
 
     try {
       final response = await http.get(url);
@@ -40,27 +43,28 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         final List<dynamic> data = decoded['announcements'];
 
         setState(() {
-          announcements = data.map((item) {
-            String id = item['title'] ?? 'no-title';
+  announcements = data.map((item) {
+    String id = item['_id'] ?? 'no-id';
+    return {
+      '_id': id,
+      'title': item['title'] ?? 'No Title',
+      'message': item['description'] ?? '',
+      'eventName': item['eventName'] ?? '',
+      'eventDescription': item['eventDescription'] ?? '',
+      'eventLocation': item['eventLocation'] ?? 'Unknown Location',
+      'eventMode': item['eventMode'] ?? '',
+      'eventDate': item['eventDate'] ?? '',
+      'eventTime': item['eventTime'] ?? '',
+      'eventDeadline': item['eventDeadline'] ?? '',
+      'eventImageUrl': item['eventImageUrl'] ?? '',
+      'eventLinks': (item['eventLinks'] as List?)?.map((link) => Map<String, String>.from(link)).toList() ?? [],
+      'date': item['date']?.toString().substring(0, 10) ?? '',
+      'isNew': !seenTitles.contains(id),
+    };
+  }).toList();
+  isLoading = false;
+});
 
-            return {
-              'title': item['title'] ?? 'No Title',
-              'message': item['description'] ?? '',
-              'eventName': item['eventName'] ?? '',
-              'eventDescription': item['eventDescription'] ?? '',
-              'eventLocation': item['eventLocation'] ?? 'Unknown Location',
-              'eventMode': item['eventMode'] ?? '',
-              'eventDate': item['eventDate'] ?? '',
-              'eventTime': item['eventTime'] ?? '',
-              'eventDeadline': item['eventDeadline'] ?? '',
-              'eventImageUrl': item['eventImageUrl'] ?? '',
-              'eventLinks': (item['eventLinks'] as List?)?.map((link) => Map<String, String>.from(link)).toList() ?? [],
-              'date': item['date']?.toString().substring(0, 10) ?? '',
-              'isNew': !seenTitles.contains(id),
-            };
-          }).toList();
-          isLoading = false;
-        });
       } else {
         print("❌ API Error: ${response.statusCode}");
         setState(() {
@@ -90,7 +94,48 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
       announcements[index]['isNew'] = false;
     });
   }
+Future<void> fetchRole() async {
+  try {
+    if (widget.token == null) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No token found. Please log in again.")),
+      );
+      return;
+    }
 
+    final url = Uri.parse(
+        'https://d0baa0944589.ngrok-free.app/profile');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer ${widget.token}',
+        'Accept': 'application/json',
+      },
+    );
+
+    final data = json.decode(response.body);
+
+    if (response.statusCode == 200 &&
+        data != null &&
+        data['success'] == true &&
+        data['user'] != null &&
+        data['user']['role'] != null) {
+      setState(() {
+        userRole = data['user']['role'];
+        isLoading = false;
+      });
+    } else {
+      throw Exception(data['message'] ?? 'Failed to fetch role');
+    }
+  } catch (err) {
+    setState(() => isLoading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: ${err.toString()}')),
+    );
+  }
+}
   @override
   Widget build(BuildContext context) {
     final themeColor = const Color(0xff75bdc4);
@@ -197,6 +242,42 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                           ),
                         ),
                       ),
+                      onLongPress: () async {
+    if (userRole == 'Admin') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Announcement'),
+          content: const Text('Are you sure you want to delete this announcement?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        print(a['_id']);
+        final str=a['_id'].toString();
+       final deleteUrl = Uri.parse('https://d0baa0944589.ngrok-free.app/api/announcements/${a['_id']}');
+final response = await http.delete(
+  deleteUrl,
+  headers: {
+    'Authorization': 'Bearer ${widget.token}',
+    'Accept': 'application/json',
+  },
+);
+        if (response.statusCode == 200) {
+          setState(() {
+            announcements.removeAt(index);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Announcement deleted')));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to delete')));
+        }
+      }
+    }
+  },
                     );
                   },
                 ),

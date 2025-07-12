@@ -268,7 +268,7 @@ class _DetailsPageState extends State<DetailsPage> {
     };
 
     final response = await http.put(  // <-- change POST to PUT
-  Uri.parse('https://d0ab-2405-201-c42a-4810-806f-1bdc-ff0f-a417.ngrok-free.app/api/users/${widget.phone}'),
+  Uri.parse('https://d0baa0944589.ngrok-free.app/api/users/${widget.phone}'),
   headers: {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer ${widget.token}',
