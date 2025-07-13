@@ -56,7 +56,7 @@ class _PostAnnouncementPageState extends State<PostAnnouncementPage> {
       return;
     }
 
-    final url = Uri.parse('https://d0baa0944589.ngrok-free.app/api/announcements/create');
+    final url = Uri.parse('https://28583fa5cdb0.ngrok-free.app/api/announcements/create');
 
     try {
       final response = await http.post(

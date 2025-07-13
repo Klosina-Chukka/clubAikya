@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> fetchTodaysEvents() async {
-    final response = await http.get(Uri.parse('https://d0baa0944589.ngrok-free.app/api/events/today'));
+    final response = await http.get(Uri.parse('https://28583fa5cdb0.ngrok-free.app/api/events/today'));
     if (response.statusCode == 200) {
       final List<dynamic> events = json.decode(response.body);
       setState(() {
@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchAnnouncements() async {
     final url =
-        Uri.parse('https://d0baa0944589.ngrok-free.app/api/announcements/all');
+        Uri.parse('https://28583fa5cdb0.ngrok-free.app/api/announcements/all');
 
     try {
       final response = await http.get(url);

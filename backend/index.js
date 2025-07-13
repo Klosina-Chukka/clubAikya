@@ -169,9 +169,18 @@ console.log("Received date (UTC):", new Date(req.body.date));
 console.log("Date in IST:", new Date(req.body.date).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }));
 
     // ✅ Send OneSignal push notification to all users
-    const notifTitle = `📢 New Event: ${title}`
-    const notifMessage = `${clubName} is hosting ${title} on ${date} at ${time}`
-    await sendNotification(notifTitle, notifMessage)
+    const { format } = require('date-fns');
+
+// Assume `date` is ISO string like "2025-07-12T16:46:12.000Z"
+const eventDate = new Date(date); // convert ISO to JS Date object
+
+const formattedDate = format(eventDate, 'MMMM d, yyyy'); // e.g., July 12, 2025
+const formattedTime = format(eventDate, 'h:mm a');       // e.g., 10:16 PM
+
+const notifTitle = `📢 New Event: ${title}`;
+const notifMessage = `${clubName} is hosting ${title} on \🗓️ ${formattedDate} at 🕒 ${formattedTime}`;
+
+await sendNotification(notifTitle, notifMessage);
 
     console.log("New event created and notification sent.")
     res.status(201).json({ success: true, event: newEvent })
@@ -273,6 +282,7 @@ app.get('/api/announcements/all', async (req, res) => {
       const event = await Event.findOne({ title: a.eventName });
       if (!event) {
         return {
+          _id: a.id,
           title: a.title,
           description: a.description,
           eventName: a.eventName,

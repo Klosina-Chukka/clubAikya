@@ -33,7 +33,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   }
 
   Future<void> fetchAnnouncements() async {
-    final url = Uri.parse('https://d0baa0944589.ngrok-free.app/api/announcements/all');
+    final url = Uri.parse('https://28583fa5cdb0.ngrok-free.app/api/announcements/all');
 
     try {
       final response = await http.get(url);
@@ -44,9 +44,8 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
 
         setState(() {
   announcements = data.map((item) {
-    String id = item['_id'] ?? 'no-id';
     return {
-      '_id': id,
+      '_id': item['_id'],
       'title': item['title'] ?? 'No Title',
       'message': item['description'] ?? '',
       'eventName': item['eventName'] ?? '',
@@ -59,7 +58,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
       'eventImageUrl': item['eventImageUrl'] ?? '',
       'eventLinks': (item['eventLinks'] as List?)?.map((link) => Map<String, String>.from(link)).toList() ?? [],
       'date': item['date']?.toString().substring(0, 10) ?? '',
-      'isNew': !seenTitles.contains(id),
+      'isNew': !seenTitles.contains(item['_id']),
     };
   }).toList();
   isLoading = false;
@@ -105,7 +104,7 @@ Future<void> fetchRole() async {
     }
 
     final url = Uri.parse(
-        'https://d0baa0944589.ngrok-free.app/profile');
+        'https://28583fa5cdb0.ngrok-free.app/profile');
 
     final response = await http.get(
       url,
@@ -259,8 +258,8 @@ Future<void> fetchRole() async {
       if (confirmed == true) {
         print(a['_id']);
         final str=a['_id'].toString();
-       final deleteUrl = Uri.parse('https://d0baa0944589.ngrok-free.app/api/announcements/${a['_id']}');
-final response = await http.delete(
+       final deleteUrl = Uri.parse('https://28583fa5cdb0.ngrok-free.app/api/announcements/${a['_id']}');
+  final response = await http.delete(
   deleteUrl,
   headers: {
     'Authorization': 'Bearer ${widget.token}',

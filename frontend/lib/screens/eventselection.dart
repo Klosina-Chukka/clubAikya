@@ -117,7 +117,7 @@ class _ClubPageState extends State<ClubPage> {
     };
   }).where((link) => link['label']!.isNotEmpty && link['url']!.isNotEmpty).toList();
 
-  var uri = Uri.parse('https://d0baa0944589.ngrok-free.app/api/events');
+  var uri = Uri.parse('https://28583fa5cdb0.ngrok-free.app/api/events');
   var request = http.MultipartRequest('POST', uri);
   request.headers['Authorization'] = 'Bearer ${widget.token}';
 
