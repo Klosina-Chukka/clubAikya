@@ -238,13 +238,38 @@ Widget build(BuildContext context) {
                                           ),
                                         ),
                                       const SizedBox(height: 10),
-                                      Text(
-                                        event['title'] ?? 'No Title',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                        ),
-                                      ),
+Row(
+  children: [
+    Expanded(
+      child: Text(
+        event['title'] ?? 'No Title',
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
+      ),
+    ),
+    Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: (DateTime.tryParse(event['date'] ?? '') ?? DateTime.now())
+                .isAfter(DateTime.now())
+            ? Colors.green
+            : Colors.red,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        (DateTime.tryParse(event['date'] ?? '') ?? DateTime.now())
+                .isAfter(DateTime.now())
+            ? 'Upcoming'
+            : 'Past',
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+    ),
+  ],
+),
+
+                                      
                                       const SizedBox(height: 8),
                                       Text(
                                         event['description'] ?? '',
@@ -325,6 +350,7 @@ Widget build(BuildContext context) {
   Positioned.fill(
     child: GestureDetector(
       onTap: () {
+      
         setState(() {
           _isFabExpanded = false;
         });
@@ -335,111 +361,133 @@ Widget build(BuildContext context) {
     ),
   ),
   Positioned(
-    bottom: 16,
-    right: 16,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        AnimatedOpacity(
-          duration: const Duration(milliseconds: 250),
-          opacity: _isFabExpanded ? 1.0 : 0.0,
-          child: AnimatedScale(
-            duration: const Duration(milliseconds: 250),
-            scale: _isFabExpanded ? 1.0 : 0.0,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-children: [
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-            ],
-          ),
-          child: const Text('Create Event', style: TextStyle(color: Colors.black)),
-        ),
-        FloatingActionButton(
-          heroTag: 'event',
-          mini: true,
-          backgroundColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ClubPage(
-                  clubName: widget.clubName,
-                  token: widget.token,
-                ),
+  bottom: 16,
+  right: 16,
+  child: Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.end,
+    children: [
+      if (userRole == 'Admin' && _isFabExpanded)
+        ...[
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isFabExpanded = false;
+                });
+              },
+              child: Container(
+                color: Colors.black54,
               ),
-            );
-          },
-          elevation: 6,
-          child: const Icon(Icons.event, color: Color(0xff75bdc4)),
-        ),
-      ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-            ],
-          ),
-          child: const Text('Post Announcement', style: TextStyle(color: Colors.black)),
-        ),
-        FloatingActionButton(
-          heroTag: 'announcement',
-          mini: true,
-          backgroundColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PostAnnouncementPage(
-                  clubName: widget.clubName,
-                ),
-              ),
-            );
-          },
-          elevation: 6,
-          child: const Icon(Icons.announcement, color: Color(0xff75bdc4)),
-        ),
-      ],
-    ),
-                const SizedBox(height: 10),
-              ],
             ),
           ),
-        ),
-        FloatingActionButton(
-          heroTag: 'main',
-          backgroundColor: const Color(0xff75bdc4),
-          onPressed: () {
-            setState(() {
-              _isFabExpanded = !_isFabExpanded;
-            });
-          },
-          elevation: 8,
-          child: Icon(_isFabExpanded ? Icons.close : Icons.add),
-        ),
-      ],
-    ),
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 250),
+            opacity: 1.0,
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 250),
+              scale: 1.0,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                          ],
+                        ),
+                        child: const Text('Create Event', style: TextStyle(color: Colors.black)),
+                      ),
+                      FloatingActionButton(
+                        heroTag: 'event',
+                        mini: true,
+                        backgroundColor: Colors.white,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ClubPage(
+                                clubName: widget.clubName,
+                                token: widget.token,
+                              ),
+                            ),
+                          );
+                        },
+                        elevation: 6,
+                        child: const Icon(Icons.event, color: Color(0xff75bdc4)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                          ],
+                        ),
+                        child: const Text('Post Announcement', style: TextStyle(color: Colors.black)),
+                      ),
+                      FloatingActionButton(
+                        heroTag: 'announcement',
+                        mini: true,
+                        backgroundColor: Colors.white,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PostAnnouncementPage(
+                                clubName: widget.clubName,
+                              ),
+                            ),
+                          );
+                        },
+                        elevation: 6,
+                        child: const Icon(Icons.announcement, color: Color(0xff75bdc4)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
+            ),
+          ),
+        ],
+      FloatingActionButton(
+        heroTag: 'main',
+        backgroundColor: const Color(0xff75bdc4),
+        onPressed: () {
+          if (userRole != 'Admin') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Only admins can perform this action."),
+              ),
+            );
+            return;
+          }
+          setState(() {
+            _isFabExpanded = !_isFabExpanded;
+          });
+        },
+        elevation: 8,
+        child: Icon(_isFabExpanded ? Icons.close : Icons.add),
+      ),
+    ],
   ),
-
+),
       ],
     ),
   );
