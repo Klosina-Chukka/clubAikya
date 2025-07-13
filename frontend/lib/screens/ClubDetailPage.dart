@@ -41,23 +41,52 @@ class _ClubDetailPageState extends State<ClubDetailPage> {
   }
 
   Future<void> fetchEvents() async {
-    final url = Uri.parse(
-        'https://28583fa5cdb0.ngrok-free.app/api/clubs/${widget.clubName}/events');
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        setState(() {
-          events = jsonData['events'];
-          isLoading = false;
-        });
-      } else {
-        setState(() => isLoading = false);
-      }
-    } catch (e) {
+  final url = Uri.parse(
+      'https://28583fa5cdb0.ngrok-free.app/api/clubs/${widget.clubName}/events');
+  try {
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      final List<dynamic> rawEvents = jsonData['events'];
+
+      final now = DateTime.now();
+
+      // Split into upcoming and past
+      final upcoming = rawEvents.where((event) {
+        final eventDate = DateTime.tryParse(event['date'] ?? '');
+        return eventDate != null && eventDate.isAfter(now);
+      }).toList();
+
+      final past = rawEvents.where((event) {
+        final eventDate = DateTime.tryParse(event['date'] ?? '');
+        return eventDate != null && !eventDate.isAfter(now);
+      }).toList();
+
+      // Sort each group
+      upcoming.sort((a, b) {
+        final dateA = DateTime.tryParse(a['date'] ?? '') ?? now;
+        final dateB = DateTime.tryParse(b['date'] ?? '') ?? now;
+        return dateA.compareTo(dateB); // earliest upcoming first
+      });
+
+      past.sort((a, b) {
+        final dateA = DateTime.tryParse(a['date'] ?? '') ?? now;
+        final dateB = DateTime.tryParse(b['date'] ?? '') ?? now;
+        return dateA.compareTo(dateB); // oldest past first
+      });
+
+      setState(() {
+        events = [...upcoming, ...past]; // upcoming first
+        isLoading = false;
+      });
+    } else {
       setState(() => isLoading = false);
     }
+  } catch (e) {
+    setState(() => isLoading = false);
   }
+}
+
 
 Future<void> fetchRole() async {
   try {
