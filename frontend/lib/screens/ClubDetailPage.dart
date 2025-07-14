@@ -42,7 +42,7 @@ class _ClubDetailPageState extends State<ClubDetailPage> {
 
   Future<void> fetchEvents() async {
   final url = Uri.parse(
-      'https://28583fa5cdb0.ngrok-free.app/api/clubs/${widget.clubName}/events');
+      'https://ff4b1329b0dc.ngrok-free.app/api/clubs/${widget.clubName}/events');
   try {
     final response = await http.get(url);
     if (response.statusCode == 200) {
@@ -99,7 +99,7 @@ Future<void> fetchRole() async {
     }
 
     final url = Uri.parse(
-        'https://28583fa5cdb0.ngrok-free.app/profile');
+        'https://ff4b1329b0dc.ngrok-free.app/profile');
 
     final response = await http.get(
       url,
@@ -343,7 +343,7 @@ Row(
 
   if (shouldDelete == true) {
     final eventId = event['_id']; // 👈 this is the MongoDB ID
-    final url = Uri.parse("https://28583fa5cdb0.ngrok-free.app/api/events/$eventId");
+    final url = Uri.parse("https://ff4b1329b0dc.ngrok-free.app/api/events/$eventId");
 
     final response = await http.delete(
       url,

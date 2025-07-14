@@ -78,14 +78,18 @@ flutter:
     - assets/clublogin.jpg
     - assets/icons/splash_image.png
     - assets/icons/splash_padded.png
-    - assets/clublogos/artclub.png
+    - assets/clublogos/algorand.png
     - assets/clublogos/ragclub.png
     - assets/clublogos/watts.jpg
     - assets/clublogos/filmclub.jpg
     - assets/clublogos/codeclub.jpg
     - assets/clublogos/photo.jpg
-    - assets/clublogos/club1.jpg
+    - assets/clublogos/elitefeet.jpg
     - assets/clublogos/evnclub.jpg
+    - assets/clublogos/googledev.jpg
+    - assets/clublogos/ice.jpg
+    - assets/clublogos/datascience.jpg
+    - assets/clublogos/lit.jpg
     - assets/idpic2.png
     
     

@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> fetchTodaysEvents() async {
-    final response = await http.get(Uri.parse('https://28583fa5cdb0.ngrok-free.app/api/events/today'));
+    final response = await http.get(Uri.parse('https://ff4b1329b0dc.ngrok-free.app/api/events/today'));
     if (response.statusCode == 200) {
       final List<dynamic> events = json.decode(response.body);
       setState(() {
@@ -38,7 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
             'title': e['title'],
             'time': e['time'],
             'club': e['clubName'],
-            'description': e['description'],
           });
         }
       });
@@ -48,9 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> fetchAnnouncements() async {
-    final url =
-        Uri.parse('https://28583fa5cdb0.ngrok-free.app/api/announcements/all');
-
+    final url = Uri.parse('https://ff4b1329b0dc.ngrok-free.app/api/announcements/all');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -66,7 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       item['date']?.toString().substring(0, 10),
               orElse: () => {},
             );
-
             return {
               'title': item['title'],
               'message': item['description'] ?? '',
@@ -205,62 +201,58 @@ class _HomeScreenState extends State<HomeScreen> {
                                 );
                               }
                             },
-                            child: Stack(
-                              children: [
-                                Card(
-                                  margin: const EdgeInsets.all(8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: 7,
-                                  child: Container(
-                                    width: 280,
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          event['title'] == 'null'
-                                              ? 'untitled'
-                                              : event['title']!.toUpperCase(),
-                                          style: const TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          event['description'] ?? '',
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        Text("Time: ${event['time']}",
+                            child: Card(
+                              margin: const EdgeInsets.all(8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 7,
+                              child: Container(
+                                width: 280,
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            event['title'] == 'null'
+                                                ? 'Untitled'
+                                                : event['title']!.toUpperCase(),
                                             style: const TextStyle(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w500,
-                                            )),
-                                        Text("Club: ${event['club']}",
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            "Time: ${event['time']}",
                                             style: const TextStyle(
-                                              fontSize: 17,
+                                              fontSize: 15,
                                               fontWeight: FontWeight.w500,
-                                            )),
-                                      ],
+                                            ),
+                                          ),
+                                          Text(
+                                            "Club: ${event['club']}",
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 10),
+                                    if (club.isNotEmpty && club['logo'] != null)
+                                      CircleAvatar(
+                                        backgroundImage: AssetImage(club['logo']),
+                                        radius: 30,
+                                      ),
+                                  ],
                                 ),
-                                if (club.isNotEmpty && club['logo'] != null)
-                                  Positioned(
-                                    top: 16,
-                                    right: 16,
-                                    child: CircleAvatar(
-                                      backgroundImage: AssetImage(club['logo']),
-                                      radius: 35,
-                                    ),
-                                  ),
-                              ],
+                              ),
                             ),
                           );
                         },

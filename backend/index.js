@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
 const cron = require('node-cron');
+const { format } = require('date-fns');
 const app = express();
 const port = 3000;
 const JWT_SECRET = 'super_secret_key_123';
@@ -15,22 +16,19 @@ const JWT_SECRET = 'super_secret_key_123';
 app.use(cors());
 app.use(express.json());
 
-// 🌩️ Cloudinary Config
 cloudinary.config({
   cloud_name: 'dbdlaoews',
   api_key: '934196156288849',
   api_secret: 'B_8UWhShgif6QQTzMx501A1af8Y'
 });
 
-// 🗃️ Multer
 const upload = multer({ dest: 'uploads/' });
 
-// 📞 Twilio
 const accountSid = 'ACf017e34c36c3d3888a81351a91792996';
 const authToken = '784178795821b423500dae787c176a1b';
 const client = require('twilio')(accountSid, authToken);
 
-// 📲 OneSignal
+// OneSignal Notification
 async function sendNotification(title, message) {
   const headers = {
     'Content-Type': 'application/json; charset=utf-8',
@@ -52,7 +50,7 @@ async function sendNotification(title, message) {
   }
 }
 
-// ⏱ MongoDB Connect
+// MongoDB Connect
 mongoose.connect('mongodb+srv://27ranjali:clubaikya@cluster0.nd2ipt3.mongodb.net/ClubAIKYA?retryWrites=true&w=majority&appName=Cluster0')
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => {
@@ -60,7 +58,7 @@ mongoose.connect('mongodb+srv://27ranjali:clubaikya@cluster0.nd2ipt3.mongodb.net
     process.exit(1);
   });
 
-// 🔧 Schemas
+// Schemas
 const userSchema = new mongoose.Schema({
   phone: String, name: String, rollNo: String,
   course: String, branch: String, dob: Date,
@@ -90,7 +88,7 @@ const announcementSchema = new mongoose.Schema({
 });
 const Announcement = mongoose.model('Announcement', announcementSchema);
 
-// 🔒 Auth Middleware
+// Auth Middleware
 const authenticateToken = async (req, res, next) => {
   const token = (req.headers['authorization'] || '').split(' ')[1];
   if (!token) return res.status(401).json({ success: false, message: 'Token missing' });
@@ -106,7 +104,7 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// 🔐 OTP
+// OTP
 const otpStore = {};
 app.post('/send-otp', async (req, res) => {
   const { phone } = req.body;
@@ -137,7 +135,7 @@ app.post('/verify-otp', async (req, res) => {
   }
 });
 
-// 📥 Create Event
+// Create Event
 app.post("/api/events", authenticateToken, upload.single('image'), async (req, res) => {
   try {
     const {
@@ -153,45 +151,35 @@ app.post("/api/events", authenticateToken, upload.single('image'), async (req, r
       public_id: `${uuidv4()}_${req.file.originalname}`
     });
 
-    fs.unlinkSync(req.file.path);
+    if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
     const newEvent = new Event({
       clubName, title, description, location, mode,
-      date: new Date(req.body.date), time, registrationDeadline: new Date(req.body.registrationDeadline),
+      date: new Date(date), time, registrationDeadline: new Date(registrationDeadline),
       customFieldLabel, customFieldValue,
       associatedLinks: JSON.parse(associatedLinks || '[]'),
       imageUrl: result.secure_url
+    });
 
-    })
+    await newEvent.save();
 
-    await newEvent.save()
-console.log("Received date (UTC):", new Date(req.body.date));
-console.log("Date in IST:", new Date(req.body.date).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }));
+    const eventDate = new Date(date);
+    const formattedDate = format(eventDate, 'MMMM d, yyyy');
+    const formattedTime = format(eventDate, 'h:mm a');
 
-    // ✅ Send OneSignal push notification to all users
-    const { format } = require('date-fns');
+    const notifTitle = `📢 New Event: ${title}`;
+    const notifMessage = `${clubName} is hosting ${title} on 🗓️ ${formattedDate} at 🕒 ${formattedTime}`;
+    await sendNotification(notifTitle, notifMessage);
 
-// Assume `date` is ISO string like "2025-07-12T16:46:12.000Z"
-const eventDate = new Date(date); // convert ISO to JS Date object
-
-const formattedDate = format(eventDate, 'MMMM d, yyyy'); // e.g., July 12, 2025
-const formattedTime = format(eventDate, 'h:mm a');       // e.g., 10:16 PM
-
-const notifTitle = `📢 New Event: ${title}`;
-const notifMessage = `${clubName} is hosting ${title} on \🗓️ ${formattedDate} at 🕒 ${formattedTime}`;
-
-await sendNotification(notifTitle, notifMessage);
-
-    console.log("New event created and notification sent.")
-    res.status(201).json({ success: true, event: newEvent })
+    console.log("New event created and notification sent.");
+    res.status(201).json({ success: true, event: newEvent });
   } catch (err) {
-    if (req.file) fs.unlinkSync(req.file.path)
-    res.status(500).json({ success: false, error: err.message })
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    res.status(500).json({ success: false, error: err.message });
   }
-})
+});
 
-
-// 👤 Create or Update User
+// Today's Events
 app.get("/api/events/today", async (req, res) => {
   try {
     const formatter = new Intl.DateTimeFormat("en-GB", {
@@ -202,26 +190,19 @@ app.get("/api/events/today", async (req, res) => {
     });
 
     const [day, month, year] = formatter.format(new Date()).split("/");
-
     const startOfIST = new Date(`${year}-${month}-${day}T00:00:00+05:30`);
     const endOfIST = new Date(`${year}-${month}-${day}T23:59:59.999+05:30`);
-
-    const startUTC = new Date(startOfIST.toISOString());
-    const endUTC = new Date(endOfIST.toISOString());
-
     const events = await Event.find({
-      date: {
-        $gte: startUTC,
-        $lte: endUTC,
-      }
-    }).sort({ time: 1 }); // 👈 Sort by time (ascending)
+      date: { $gte: new Date(startOfIST), $lte: new Date(endOfIST) }
+    }).sort({ time: 1 });
 
     res.status(200).json(events);
   } catch (err) {
-    console.error("Fetch error:", err);
     res.status(500).json({ error: "Failed to fetch today's events" });
   }
 });
+
+// Delete Event
 app.delete("/api/events/:id", authenticateToken, async (req, res) => {
   try {
     await Event.findByIdAndDelete(req.params.id);
@@ -230,31 +211,22 @@ app.delete("/api/events/:id", authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+// Delete Announcement
 app.delete('/api/announcements/:id', authenticateToken, async (req, res) => {
   try {
-    const id = req.params.id;
-    console.log("ID received:", id);
-
-    const deleted = await Announcement.findByIdAndDelete(id);
-    console.log("Delete ID received:", req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ success: false, message: "Announcement not found" });
-    }
-
+    const deleted = await Announcement.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, message: "Announcement not found" });
     res.status(200).json({ success: true, message: "Announcement deleted" });
   } catch (err) {
-    console.error("Delete Error:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-
-
-// 📢 Announcements
+// Create Announcement
 app.post('/api/announcements/create', async (req, res) => {
   try {
     const { title, description, eventName, club } = req.body;
-
     if (!title || !eventName || !club) {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
@@ -262,35 +234,50 @@ app.post('/api/announcements/create', async (req, res) => {
     const announcement = new Announcement({ title, description, eventName, club });
     await announcement.save();
 
-    // ✅ Send OneSignal Notification (reuse from event route)
     const notifTitle = `📢 New Announcement from ${club}`;
     const notifMessage = `${eventName}: ${title}`;
     await sendNotification(notifTitle, notifMessage);
 
-    console.log("New announcement created and notification sent.");
     res.status(201).json({ success: true, announcement });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Error creating announcement', error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
+// Update User
+app.put('/api/users/:phone', authenticateToken, async (req, res) => {
+  try {
+    console.log(`Updating phone: ${req.params.phone}`);
+    console.log("Body:", req.body);
 
+    const update = {
+      name: req.body.name,
+      rollNo: req.body.rollNo,
+      course: req.body.course,
+      branch: req.body.branch,
+      dob: req.body.dob ? new Date(req.body.dob) : undefined,
+      validity: req.body.validity,
+      role: req.body.role
+    };
+
+    Object.keys(update).forEach(key => update[key] === undefined && delete update[key]);
+
+    const user = await User.findOneAndUpdate({ phone: req.params.phone }, update, { new: true });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    res.status(200).json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+});
+
+// All Announcements
 app.get('/api/announcements/all', async (req, res) => {
   try {
     const announcements = await Announcement.find().sort({ date: -1 });
     const enriched = await Promise.all(announcements.map(async (a) => {
       const event = await Event.findOne({ title: a.eventName });
-      if (!event) {
-        return {
-          _id: a.id,
-          title: a.title,
-          description: a.description,
-          eventName: a.eventName,
-          date: a.date
-        };
-      }
-
-      return {
+      return event ? {
         _id: a.id,
         title: a.title,
         description: a.description,
@@ -304,26 +291,33 @@ app.get('/api/announcements/all', async (req, res) => {
         eventImageUrl: event.imageUrl,
         eventLinks: event.associatedLinks,
         date: a.date
+      } : {
+        _id: a.id,
+        title: a.title,
+        description: a.description,
+        eventName: a.eventName,
+        date: a.date
       };
     }));
+
     res.status(200).json({ success: true, announcements: enriched });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Error fetching announcements', error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 🧑 Profile
+// Profile
 app.get('/profile', authenticateToken, (req, res) => {
   res.json({ success: true, user: req.user });
 });
 
-// 📅 Events by Club
+// Club Events
 app.get('/api/clubs/:clubName/events', async (req, res) => {
   const events = await Event.find({ clubName: req.params.clubName });
   res.json({ success: true, events });
 });
 
-// 🧪 Health Check
+// Health Check
 app.get('/ping-db', async (req, res) => {
   try {
     const ping = await mongoose.connection.db.admin().ping();
@@ -333,7 +327,7 @@ app.get('/ping-db', async (req, res) => {
   }
 });
 
-// ⏰ Daily CRON Job at 9 AM
+// CRON Job 9AM
 cron.schedule('0 9 * * *', async () => {
   const now = new Date();
   const istOffset = 5.5 * 60 * 60 * 1000;
@@ -349,5 +343,4 @@ cron.schedule('0 9 * * *', async () => {
   }
 }, { timezone: 'Asia/Kolkata' });
 
-// 🚀 Start Server
 app.listen(port, () => console.log(`🚀 Server running on port ${port}`));

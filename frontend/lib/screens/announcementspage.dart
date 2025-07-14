@@ -33,7 +33,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   }
 
   Future<void> fetchAnnouncements() async {
-    final url = Uri.parse('https://28583fa5cdb0.ngrok-free.app/api/announcements/all');
+    final url = Uri.parse('https://ff4b1329b0dc.ngrok-free.app/announcements/all');
 
     try {
       final response = await http.get(url);
@@ -104,7 +104,7 @@ Future<void> fetchRole() async {
     }
 
     final url = Uri.parse(
-        'https://28583fa5cdb0.ngrok-free.app/profile');
+        'https://ff4b1329b0dc.ngrok-free.app/profile');
 
     final response = await http.get(
       url,
@@ -258,7 +258,7 @@ Future<void> fetchRole() async {
       if (confirmed == true) {
         print(a['_id']);
         final str=a['_id'].toString();
-       final deleteUrl = Uri.parse('https://28583fa5cdb0.ngrok-free.app/api/announcements/${a['_id']}');
+       final deleteUrl = Uri.parse('https://ff4b1329b0dc.ngrok-free.app/api/announcements/${a['_id']}');
   final response = await http.delete(
   deleteUrl,
   headers: {
