@@ -88,7 +88,7 @@ Clubaikya is a mobile application designed to centralize and simplify the manage
 ### Backend Setup
 
 ```bash
-git clone <backend-repo-url>
+git clone 'https://github.com/Anjalirajaramker/ClubAIKYA1'
 cd backend
 npm install
 npm start
@@ -97,7 +97,7 @@ npm start
 ### Frontend Setup
 
 ```bash
-git clone <frontend-repo-url>
+git clone 'https://github.com/Anjalirajaramker/ClubAIKYA1/'
 cd frontend
 flutter pub get
 flutter run
