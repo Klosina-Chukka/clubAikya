@@ -12,35 +12,36 @@ const { format } = require('date-fns');
 const app = express();
 const port = 3000;
 const JWT_SECRET = 'super_secret_key_123';
+require("dotenv").config();
 
 app.use(cors());
 app.use(express.json());
 
 cloudinary.config({
-  cloud_name: 'dbdlaoews',
-  api_key: '934196156288849',
-  api_secret: 'B_8UWhShgif6QQTzMx501A1af8Y'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
 const upload = multer({ dest: 'uploads/' });
+const client = require("twilio")(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
-const accountSid = 'ACf017e34c36c3d3888a81351a91792996';
-const authToken = '784178795821b423500dae787c176a1b';
-const client = require('twilio')(accountSid, authToken);
 
 // OneSignal Notification
-async function sendNotification(title, message) {
-  const headers = {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Authorization': `Basic os_v2_app_yb2xt4j3kvakdb7tmqqbtutfzeqi4fy3p62e6sfts6yzbacx6rxa3znflhjrku5pn5c3rvsizcyqgooe4sqi3zo7k5nocnam6e6fx6a`
-  };
+const headers = {
+  "Content-Type": "application/json; charset=utf-8",
+  Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
+};
 
-  const body = {
-    app_id: 'c07579f1-3b55-40a1-87f3-642019d265c9',
-    included_segments: ['All'],
-    headings: { en: title },
-    contents: { en: message }
-  };
+const body = {
+  app_id: process.env.ONESIGNAL_APP_ID,
+  included_segments: ["All"],
+  headings: { en: title },
+  contents: { en: message },
+};
+
 
   try {
     const response = await axios.post('https://onesignal.com/api/v1/notifications', body, { headers });
@@ -48,15 +49,17 @@ async function sendNotification(title, message) {
   } catch (error) {
     console.error('❌ Notification error:', error.response?.data || error.message);
   }
-}
+
 
 // MongoDB Connect
-mongoose.connect('mongodb+srv://27ranjali:clubaikya@cluster0.nd2ipt3.mongodb.net/ClubAIKYA?retryWrites=true&w=majority&appName=Cluster0')
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => {
-    console.error('❌ MongoDB error:', err.message);
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => {
+    console.error("❌ MongoDB error:", err.message);
     process.exit(1);
   });
+
 
 // Schemas
 const userSchema = new mongoose.Schema({
