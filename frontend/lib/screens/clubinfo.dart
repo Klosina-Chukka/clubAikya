@@ -50,7 +50,7 @@
     },
     {
       "name": "Algorand Block chain",
-      "logo": "assets/clublogos/algorand.png",
+      "logo": "assets/clublogos/algorand.jpg",
       "description": "Empowering students with blockchain education, hands-on projects, and networking opportunities at JNTU Hyderabad.",
       "instagram": "https://www.instagram.com/abc_jntuh/",
       "website": "https://www.abcxjntuh.in/",
