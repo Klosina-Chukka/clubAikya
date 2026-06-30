@@ -9,10 +9,10 @@ const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
 const cron = require('node-cron');
 const { format } = require('date-fns');
-const app = express();
-const port = 3000;
-const JWT_SECRET = 'super_secret_key_123';
 require("dotenv").config();
+const app = express();
+const port = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_123';
 
 app.use(cors());
 app.use(express.json());
