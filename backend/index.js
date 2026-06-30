@@ -113,16 +113,24 @@ app.post('/send-otp', async (req, res) => {
   const { phone } = req.body;
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore[phone] = otp;
-  try {
-    await client.messages.create({
-      body: `Your otp is ${otp}`,
-      from: '+1 816 451 5164',
-      to: phone
-    });
-    res.send({ success: true, message: 'OTP sent' });
-  } catch (err) {
-    res.status(500).send({ success: false, message: err.message });
-  }
+  
+  // Mock OTP - log to console for testing
+  console.log(`📱 Mock OTP for ${phone}: ${otp}`);
+  
+  // For production, uncomment the Twilio code below:
+  // try {
+  //   await client.messages.create({
+  //     body: `Your otp is ${otp}`,
+  //     from: process.env.TWILIO_PHONE_NUMBER,
+  //     to: phone
+  //   });
+  //   res.send({ success: true, message: 'OTP sent' });
+  // } catch (err) {
+  //   res.status(500).send({ success: false, message: err.message });
+  // }
+  
+  // For now, return success (OTP is logged in console)
+  res.send({ success: true, message: 'OTP sent (check console for mock OTP)', testOtp: otp });
 });
 
 app.post('/verify-otp', async (req, res) => {
